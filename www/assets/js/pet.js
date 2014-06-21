@@ -61,3 +61,6 @@ pc.onaddstream = function(e){
     var video = document.getElementById('ownervideo');
     attachMediaStream(video,e.stream);
 };
+
+hoodie.account.signIn('test', 'test');
+
