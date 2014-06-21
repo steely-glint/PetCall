@@ -6,7 +6,6 @@ var pc;
 hoodie.remote.on('add:ownercandidate', function (candy) {
     console.log("got candidate "+JSON.stringify(candy));
     pc.addIceCandidate(new RTCIceCandidate(candy));
-
 });
 
 
@@ -20,30 +19,45 @@ var answerCreated = function(localDesc) {
             });
 };
 
+function gum(){
+        getUserMedia ({'audio': true,'video': true},
+        function(stream) {
+            // pets don't like mirrors
+            pc.addStream(stream);
+            pc.createAnswer(answerCreated, 
+                function(){
+                    console.log("create answer failed ");
+                }, {});
+            },
+        function() {
+                    console.log("gum failed ");
+        }
+     );
+}
+
 hoodie.remote.on('add:offer', function (newObject) {
     console.log("got offer "+JSON.stringify(newObject));
     var sd = new RTCSessionDescription(newObject);
     pc.setRemoteDescription(sd, 
       function() {
             console.log("set remote offer ");
-            pc.createAnswer(answerCreated, 
-            function(){
-               console.log("set remote failed ");
-            }, {});
+            gum();
+
     },function() {
             console.log("failed to set remote offer");
     });
 });
 
-if (typeof webkitRTCPeerConnection == "function") {
-    pc = new webkitRTCPeerConnection(configuration, null);
-} else if (typeof mozRTCPeerConnection == "function") {
-    pc = mozRTCPeerConnection(configuration, null);
-}
+pc = RTCPeerConnection(configuration, null);
+
 pc.onicecandidate = function(evt) {
     if (evt.candidate != null) {
        console.log("petcandidate adding");
-
-        hoodie.store.add("petcandidate", evt.candidate);
+       hoodie.store.add("petcandidate", evt.candidate);
     }
+};
+
+pc.onaddstream = function(e){
+    var video = document.getElementById('ownervideo');
+    attachMediaStream(video,e.stream);
 };

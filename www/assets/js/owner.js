@@ -1,9 +1,23 @@
 // initialize Hoodie
 var hoodie = new Hoodie();
-var configuration = null;
+var configuration = {"iceServers": [
+        {url: "stun:stun.l.google.com:19302"},
+        {url:"turn:71.6.135.115:3478",username:"test",credential:"tester"},
+        {url:"turn:71.6.135.115:3479",username:"test",credential:"tester"}
+    ]};
 var pc = null;
-var gum = navigator.msGetUserMedia || navigator.mozGetUserMedia || navigator.webkitGetUserMedia || navigator.getUserMedia;
 
+function setStatus(msg){
+    $("robostatus").attr("src","//robohash.org/"+msg+".png");
+    $("robostatus").attr("tooltip","status "+msg);
+}
+
+setStatus("browser="+webrtcDetectedBrowser);
+
+function error(where,what){
+     console.log("error in "+where+" "+what);
+     setStatus("error:"+what+":"+where);
+}
 hoodie.remote.on('add:petcandidate', function (candy) {
     console.log("got candidate "+JSON.stringify(candy));
     pc.addIceCandidate(new RTCIceCandidate(candy));
@@ -16,46 +30,50 @@ hoodie.remote.on('add:answer', function (newObject) {
       function() {
             console.log("set remote answer ");
     },function() {
-            console.log("failed to set remote answer");
+            error("setRemoteDescription","failed");
     });
 });
 
 function call() {
-    if (typeof webkitRTCPeerConnection == "function") {
-        pc = new webkitRTCPeerConnection(configuration, null);
-    } else if (typeof mozRTCPeerConnection == "function") {
-        pc = mozRTCPeerConnection(configuration, null);
-    }
+    pc = RTCPeerConnection(configuration, null);
+    
     pc.onicecandidate = function(evt) {
         if (evt.candidate != null) {
             console.log("ownercandidate adding  "+ JSON.stringify(evt.candidate));
             hoodie.store.add("ownercandidate", evt.candidate);
         }
     };
-
+    pc.onaddstream = function(e){
+        console.log("onaddstream ");
+        var video = document.getElementById('petvideo');
+        attachMediaStream(video,e.stream);
+    };
+    
     var offerCreated = function(localDesc) {
         var sd = new RTCSessionDescription(localDesc);
         pc.setLocalDescription(sd, function(){ 
             hoodie.store.add("offer",localDesc);
             } , 
             function (){
-                console.log("setlocal failed");
+                error("setLocalDescription", "failed");
             });
     };
-    var offerFail = function(e) {
-        console.log('failed to create offer ' + JSON.stringify(e));
-    };
-    navigator.webkitGetUserMedia ({'audio': true,'video': true},
+    
+    getUserMedia ({'audio': true,'video': true},
         function(stream) {
-            var localVideo = document.getElementById('myVideo');
+            var localVideo = document.getElementById('ownervideo');
             localVideo.style.opacity = 1;
-            localVideo.src = webkitURL.createObjectURL(stream);
+            attachMediaStream(localVideo,stream);
             localVideo.muted = "muted";
             pc.addStream(stream);
-            pc.createOffer(offerCreated, offerFail, {});
+            pc.createOffer(offerCreated, 
+                function(e){
+                    error("createOffer", "failed");
+                }, 
+                {});
             },
         function(error) {
-                console.log("Failed to get access to local media. Error code was " + error.code);
+                error("getUserMedia", "failed");;
         }
      );
 

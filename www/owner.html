@@ -67,15 +67,17 @@
         </div><!--/hoodieAccountBar -->
       </div>
         <button class="btn btn-small" onclick="call()">Call</button>
+        <div><img id="robostatus" height="30" width="30" src="http://robohash.org/Happy.png"/></div>
 
       <div class="content">
 
+          <div>
+          <video id="ownervideo" autoplay="autoplay" width="100" height="100"/>
+          </div>
+          <div>
+          <video id="petvideo" autoplay="autoplay" width="400" height="400"/>
+          </div>
       </div>
-        <div><img height="30px" width="30px" src="http://robohash.org/Happy.png"/></div>
-      <div class="code">
-          <video id="myVideo" autoplay="autoplay" width="400" height="400"/>
-      </div><!-- /.code -->
-
       <footer class="copy">
         <p>&hearts; hood.ie 2014</p>
       </footer>
@@ -89,6 +91,7 @@
 
     <script src="assets/vendor/hoodie.accountbar.bootstrap.js"></script>
     <script src="assets/vendor/bootstrap.modalform.js"></script>
+    <script src="assets/js/adapter.js"></script>
     <script src="assets/js/owner.js"></script>
   </body>
 </html>
