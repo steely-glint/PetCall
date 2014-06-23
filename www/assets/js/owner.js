@@ -5,6 +5,15 @@ var configuration = {"iceServers": [
         {url:"turn:71.6.135.115:3478",username:"test",credential:"tester"},
         {url:"turn:71.6.135.115:3479",username:"test",credential:"tester"}
     ]};
+var mediaConstraints  = {
+  video: {
+    mandatory: {
+      maxWidth: 640,
+      maxHeight: 360
+    }
+  }, 
+  audio: true
+};
 var pc = null;
 
 function setStatus(msg){
@@ -29,7 +38,8 @@ hoodie.remote.on('add:answer', function (newObject) {
     pc.setRemoteDescription(sd, 
       function() {
             console.log("set remote answer ");
-    },function() {
+      },
+      function() {
             error("setRemoteDescription","failed");
     });
 });
@@ -59,7 +69,7 @@ function call() {
             });
     };
     
-    getUserMedia ({'audio': true,'video': true},
+    getUserMedia (mediaConstraints,
         function(stream) {
             var localVideo = document.getElementById('ownervideo');
             localVideo.style.opacity = 1;
@@ -72,7 +82,7 @@ function call() {
                 }, 
                 {});
             },
-        function(error) {
+        function(e) {
                 error("getUserMedia", "failed");;
         }
      );

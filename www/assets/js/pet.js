@@ -1,58 +1,40 @@
 // initialize Hoodie
 var hoodie  = new Hoodie();
-var configuration = null;
-var pc;
+var peerconfig = {"iceServers": [
+        {url: "stun:stun.l.google.com:19302"},
+        {url:"turn:71.6.135.115:3478",username:"test",credential:"tester"},
+        {url:"turn:71.6.135.115:3479",username:"test",credential:"tester"}
+    ]};
+var mediaconfig = {'audio': true,'video': true}; 
+var pc = RTCPeerConnection(peerconfig, null);
+var attempt = "nothing";
 
-hoodie.remote.on('add:ownercandidate', function (candy) {
-    console.log("got candidate "+JSON.stringify(candy));
-    pc.addIceCandidate(new RTCIceCandidate(candy));
-});
-
-
-var answerCreated = function(localDesc) {
-    var sd = new RTCSessionDescription(localDesc);
-    pc.setLocalDescription(sd, function() {
-        hoodie.store.add("answer", localDesc);
-    },
-            function() {
-                console.log("setlocal failed");
-            });
-};
-
-function gum(){
-        getUserMedia ({'audio': true,'video': true},
-        function(stream) {
-            // pets don't like mirrors
-            pc.addStream(stream);
-            pc.createAnswer(answerCreated, 
-                function(){
-                    console.log("create answer failed ");
-                }, {});
-            },
-        function() {
-                    console.log("gum failed ");
-        }
-     );
+function failed(){
+    console.log(attempt+" failed...");
 }
 
-hoodie.remote.on('add:offer', function (newObject) {
-    console.log("got offer "+JSON.stringify(newObject));
-    var sd = new RTCSessionDescription(newObject);
-    pc.setRemoteDescription(sd, 
-      function() {
-            console.log("set remote offer ");
-            gum();
+function answerCreated(localDesc) {
+    var sd = new RTCSessionDescription(localDesc);
+    attempt="setLocalDescription";
+    pc.setLocalDescription(sd, function() {
+        hoodie.store.add("answer", localDesc);
+    },failed);
+};
 
-    },function() {
-            console.log("failed to set remote offer");
-    });
-});
-
-pc = RTCPeerConnection(configuration, null);
-
+function GUM(){
+    attempt="getUserMedia";
+    getUserMedia (mediaconfig,
+        function(stream) {
+            pc.addStream(stream);
+            attempt="createAnswer";
+            pc.createAnswer(answerCreated, 
+                failed, {});
+            },failed
+     );
+}
+  
 pc.onicecandidate = function(evt) {
     if (evt.candidate != null) {
-       console.log("petcandidate adding");
        hoodie.store.add("petcandidate", evt.candidate);
     }
 };
@@ -64,3 +46,22 @@ pc.onaddstream = function(e){
 
 hoodie.account.signIn('test', 'test');
 
+hoodie.store.removeAll("ownercandidate").done(
+        function() {
+            hoodie.remote.on('add:ownercandidate',
+                    function(candy) {
+                        pc.addIceCandidate(new RTCIceCandidate(candy));
+                        hoodie.store.remove(candy.type, candy.id);
+                    });
+        });
+hoodie.store.removeAll("offer").done(
+        function() {
+            hoodie.remote.on('add:offer',
+                    function(newObject) {
+                        var sd = new RTCSessionDescription(newObject);
+                        attempt = "setRemoteDescription";
+                        pc.setRemoteDescription(sd, GUM, failed);
+                        hoodie.store.remove(newObject.type, newObject.id);
+                    });
+        });
+$('#ownervideo').attr('poster', "assets/img/" + hoodie.account.username + ".jpg");
