@@ -65,3 +65,4 @@ hoodie.store.removeAll("offer").done(
                     });
         });
 $('#ownervideo').attr('poster', "assets/img/" + hoodie.account.username + ".jpg");
+

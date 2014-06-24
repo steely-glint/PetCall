@@ -17,32 +17,41 @@ var mediaConstraints  = {
 var pc = null;
 
 function setStatus(msg){
-    $("robostatus").attr("src","//robohash.org/"+msg+".png");
-    $("robostatus").attr("tooltip","status "+msg);
+    $("#ownervideo").attr("poster","//robohash.org/"+msg+".png");
+    $("#ownervideo").attr("tooltip","status "+msg);
 }
 
-setStatus("browser="+webrtcDetectedBrowser);
 
 function error(where,what){
      console.log("error in "+where+" "+what);
      setStatus("error:"+what+":"+where);
 }
-hoodie.remote.on('add:petcandidate', function (candy) {
-    console.log("got candidate "+JSON.stringify(candy));
-    pc.addIceCandidate(new RTCIceCandidate(candy));
-});
 
-hoodie.remote.on('add:answer', function (newObject) {
-    console.log("got answer "+JSON.stringify(newObject));
-    var sd = new RTCSessionDescription(newObject);
-    pc.setRemoteDescription(sd, 
-      function() {
-            console.log("set remote answer ");
-      },
-      function() {
-            error("setRemoteDescription","failed");
-    });
-});
+hoodie.account.signIn('test', 'test');
+setStatus(hoodie.account.username);
+
+hoodie.store.removeAll("petcandidate").done(
+        function() {
+            hoodie.remote.on('add:petcandidate', function(candy) {
+                console.log("got candidate " + JSON.stringify(candy));
+                pc.addIceCandidate(new RTCIceCandidate(candy));
+            });
+        });
+hoodie.store.removeAll("answer").done(
+        function() {
+            hoodie.remote.on('add:answer', function(newObject) {
+                console.log("got answer " + JSON.stringify(newObject));
+                var sd = new RTCSessionDescription(newObject);
+                pc.setRemoteDescription(sd,
+                        function() {
+                            console.log("set remote answer ");
+                        },
+                        function() {
+                            error("setRemoteDescription", "failed");
+                        });
+            });
+        });
+$('#petvideo').attr('poster', "assets/img/" + hoodie.account.username + ".jpg");
 
 function call() {
     pc = RTCPeerConnection(configuration, null);
